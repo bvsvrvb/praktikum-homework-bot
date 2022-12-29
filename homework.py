@@ -47,7 +47,7 @@ def send_message(bot, message):
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
         logging.debug('Сообщение отправлено в телеграм')
-    except:
+    except Exception:
         logging.error('Ошибка при отправке сообщения в телеграм')
 
 
@@ -100,12 +100,8 @@ def parse_status(homework):
 def main():
     """Основная логика работы бота."""
 
-    ...
-
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     timestamp = int(time.time())
-
-    ...
 
     while True:
         try:
