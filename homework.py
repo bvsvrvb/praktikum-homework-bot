@@ -7,7 +7,8 @@ import sys
 from dotenv import load_dotenv
 from http import HTTPStatus
 
-from exceptions import TimestampException, BadTokenException, NotOKResponse, NoHomeworkName, NoStatusData
+from exceptions import TimestampException, BadTokenException, NotOKResponse
+from exceptions import NoHomeworkName, NoStatusData
 
 load_dotenv()
 
@@ -35,8 +36,8 @@ logging.basicConfig(
 
 def check_tokens():
     """Проверка доступности переменных окружения."""
-    if (PRACTICUM_TOKEN or TELEGRAM_TOKEN or TELEGRAM_CHAT_ID) == None:
-        logging.critical('Отсутствуют обязательные переменные окружения во время запуска бота')
+    if (PRACTICUM_TOKEN or TELEGRAM_TOKEN or TELEGRAM_CHAT_ID) is None:
+        logging.critical('Отсутствуют обязательные переменные окружения')
         sys.exit()
     pass
 
@@ -53,10 +54,12 @@ def send_message(bot, message):
 def get_api_answer(timestamp):
     """Запрос к API Практикума."""
     try:
-        response = requests.get(ENDPOINT, headers=HEADERS, params={'from_date': timestamp})
+        response = requests.get(ENDPOINT, headers=HEADERS, params={
+            'from_date': timestamp})
     except requests.RequestException:
-        logging.error('При запросе к API возникает исключение requests.RequestException')
-    if not response.status_code == (HTTPStatus.OK or HTTPStatus.BAD_REQUEST or HTTPStatus.UNAUTHORIZED):
+        logging.error('При запросе к API возникает исключение')
+    if not response.status_code == (HTTPStatus.OK or HTTPStatus.BAD_REQUEST
+                                    or HTTPStatus.UNAUTHORIZED):
         logging.error('Ошибка ответа от API Практикума')
         raise NotOKResponse('Ошибка ответа от API Практикума')
     return response.json()
@@ -65,32 +68,31 @@ def get_api_answer(timestamp):
 def check_response(response):
     """Проверка ответа API на соответствие документации."""
     if not type(response) == dict:
-        logging.error('Структура данных в ответе API под ключом homeworks - не словарь')
+        logging.error('В ответе API под ключом homeworks - не словарь')
         raise TypeError
     elif response.get('code') == 'UnknownError':
         logging.error('Ошибка формата from_date')
         raise TimestampException('Ошибка формата from_date')
     elif response.get('code') == 'not_authenticated':
         logging.error('Запрос с недействительным или некорректным токеном')
-        raise BadTokenException('Запрос с недействительным или некорректным токеном')
+        raise BadTokenException('Запрос с некорректным токеном')
     elif not type(response.get('homeworks')) == list:
-        logging.error('Структура данных в ответе API под ключом homeworks - не список')
+        logging.error('В ответе API под ключом homeworks - не список')
         raise TypeError
     elif len(response.get('homeworks')) == 0:
-        logging.debug('За выбранный интервал времени ни у одной из домашних работ не появился новый статус')
+        logging.debug('Обновлений домашки нет')
         pass
-        # raise NoUpdatesException('За выбранный интервал времени ни у одной из домашних работ не появился новый статус')
     else:
         return response.get('homeworks')[0]
 
 
 def parse_status(homework):
-    """Извлекает из информации о конкретной домашней работе статус этой работы."""
+    """Извлекает из информации о конкретной домашней работе статус."""
     homework_name = homework.get('homework_name')
-    if homework_name == None:
+    if homework_name is None:
         raise NoHomeworkName('В ответе API домашки нет ключа homework_name')
     verdict = HOMEWORK_VERDICTS.get(homework.get('status'))
-    if verdict == None:
+    if verdict is None:
         raise NoStatusData('В ответе API домашки нет статуса')
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
@@ -101,7 +103,7 @@ def main():
     ...
 
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    timestamp = 0 # int(time.time())
+    timestamp = int(time.time())
 
     ...
 
@@ -110,7 +112,7 @@ def main():
             check_tokens()
             response = get_api_answer(timestamp)
             homework = check_response(response)
-            if not homework == None:
+            if homework is not None:
                 status = parse_status(homework)
                 send_message(bot, status)
             timestamp = response.get('current_date')
