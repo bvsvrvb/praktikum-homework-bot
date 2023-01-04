@@ -1,14 +1,21 @@
-import os
-import telegram
-import time
-import requests
 import logging
+import os
 import sys
-from dotenv import load_dotenv
+import time
 from http import HTTPStatus
 
-from exceptions import TimestampException, BadTokenException, NotOKResponse
-from exceptions import NoHomeworkName, NoStatusData
+import requests
+import telegram
+from dotenv import load_dotenv
+
+try:
+    from json.decoder import JSONDecodeError
+except ImportError:
+    JSONDecodeError = ValueError
+
+from endpoints import ENDPOINT
+from exceptions import (BadTokenException, NoHomeworkName, NoStatusData,
+                        NotOKResponse, TimestampException)
 
 load_dotenv()
 
@@ -17,7 +24,6 @@ TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
 RETRY_PERIOD = 600
-ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 
 HOMEWORK_VERDICTS = {
@@ -26,28 +32,23 @@ HOMEWORK_VERDICTS = {
     'rejected': 'Работа проверена: у ревьюера есть замечания.'
 }
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    filename='main.log',
-    filemode='w',
-    format='%(asctime)s, %(levelname)s, %(message)s'
-)
-
 
 def check_tokens():
     """Проверка доступности переменных окружения."""
-    if (PRACTICUM_TOKEN or TELEGRAM_TOKEN or TELEGRAM_CHAT_ID) is None:
-        logging.critical('Отсутствуют обязательные переменные окружения')
-        sys.exit()
-    pass
+    return all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID])
+    #if (PRACTICUM_TOKEN or TELEGRAM_TOKEN or TELEGRAM_CHAT_ID) is None:
+    #    logging.critical('Отсутствуют обязательные переменные окружения')
+    #    sys.exit()
+    #pass
 
 
 def send_message(bot, message):
     """Отправка сообщения в телеграм."""
     try:
+        logging.debug('Начинаем отправку сообщения в телеграм')
         bot.send_message(TELEGRAM_CHAT_ID, message)
-        logging.debug('Сообщение отправлено в телеграм')
-    except Exception:
+        logging.debug('Сообщение успешно отправлено в телеграм')
+    except telegram.TelegramError:
         logging.error('Ошибка при отправке сообщения в телеграм')
 
 
@@ -62,12 +63,15 @@ def get_api_answer(timestamp):
                                     or HTTPStatus.UNAUTHORIZED):
         logging.error('Ошибка ответа от API Практикума')
         raise NotOKResponse('Ошибка ответа от API Практикума')
-    return response.json()
+    try:
+        return response.json()
+    except JSONDecodeError:
+        logging.error('Ошибка преобразования ответа API в json')
 
 
 def check_response(response):
     """Проверка ответа API на соответствие документации."""
-    if not type(response) == dict:
+    if not isinstance(response, dict):
         logging.error('В ответе API под ключом homeworks - не словарь')
         raise TypeError
     elif response.get('code') == 'UnknownError':
@@ -102,9 +106,12 @@ def main():
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     timestamp = int(time.time())
 
+    if not check_tokens():
+        logging.critical('Отсутствуют обязательные переменные окружения')
+        sys.exit()
+
     while True:
         try:
-            check_tokens()
             response = get_api_answer(timestamp)
             homework = check_response(response)
             if homework is not None:
@@ -116,8 +123,16 @@ def main():
             message = f'Сбой в работе программы: {error}'
             send_message(bot, message)
 
-        time.sleep(RETRY_PERIOD)
+        finally:
+            time.sleep(RETRY_PERIOD)
 
 
 if __name__ == '__main__':
+    logging.basicConfig(
+        level=logging.DEBUG,
+        filename='main.log',
+        filemode='w',
+        format='%(asctime)s, %(levelname)s, %(message)s'
+    )
+
     main()
