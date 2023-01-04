@@ -36,10 +36,6 @@ HOMEWORK_VERDICTS = {
 def check_tokens():
     """Проверка доступности переменных окружения."""
     return all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID])
-    #if (PRACTICUM_TOKEN or TELEGRAM_TOKEN or TELEGRAM_CHAT_ID) is None:
-    #    logging.critical('Отсутствуют обязательные переменные окружения')
-    #    sys.exit()
-    #pass
 
 
 def send_message(bot, message):
