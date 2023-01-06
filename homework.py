@@ -3,15 +3,11 @@ import os
 import sys
 import time
 from http import HTTPStatus
+from json.decoder import JSONDecodeError
 
 import requests
 import telegram
 from dotenv import load_dotenv
-
-try:
-    from json.decoder import JSONDecodeError
-except ImportError:
-    JSONDecodeError = ValueError
 
 from endpoints import ENDPOINT
 from exceptions import (BadTokenException, NoHomeworkName, NoStatusData,
@@ -76,7 +72,7 @@ def check_response(response):
     elif response.get('code') == 'not_authenticated':
         logging.error('Запрос с недействительным или некорректным токеном')
         raise BadTokenException('Запрос с некорректным токеном')
-    elif not type(response.get('homeworks')) == list:
+    elif not isinstance(response.get('homeworks'), list):
         logging.error('В ответе API под ключом homeworks - не список')
         raise TypeError
     elif len(response.get('homeworks')) == 0:
