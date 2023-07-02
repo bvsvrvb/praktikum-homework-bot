@@ -10,9 +10,9 @@ Telegram-бот, который обращается к API сервиса Пр�
 - логирует свою работу и сообщает о важных проблемах сообщением в Telegram.
 
 ## Технологии
-[![Python](https://img.shields.io/badge/-Python-464646?style=flat-square&logo=python)](https://www.python.org/)
-[![python-telegram-bot](https://img.shields.io/badge/-python--telegram--bot-464646?style=flat-square&logo=telegram)](https://python-telegram-bot.org/)
-[![python-dotenv](https://img.shields.io/badge/-python--dotenv-464646?style=flat-square&logo=dotenv)](https://github.com/theskumar/python-dotenv)
+[![Python](https://img.shields.io/badge/Python-3.7-3776AB?logo=python)](https://www.python.org/)
+[![python-telegram-bot](https://img.shields.io/badge/python--telegram--bot-grey?logo=telegram)](https://python-telegram-bot.org/)
+[![python-dotenv](https://img.shields.io/badge/python--dotenv-grey?logo=dotenv)](https://github.com/theskumar/python-dotenv)
 
 ## Запуск проекта
 Клонировать репозиторий и перейти в директорию проекта:
